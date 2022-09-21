@@ -16,3 +16,16 @@ html {
 body {
   margin-bottom: 60px;
 }
+
+.centerDiv {
+    margin: 0 auto;
+}
+
+.centerVertical {
+    padding-top: 10%;
+    width: 100%;
+}
+
+.centerVerticalLogin {
+    width: 100%;
+}
