@@ -6,20 +6,37 @@ using SixLabors.ImageSharp;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Blog.Data;
+using Blog.Areas.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
-//builder.Services.AddControllersWithViews();
-builder.Services.AddDbContext<BlogDbContext>(
-    options =>
+
+builder.Services.AddDbContext<IdentityDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("BlogContextIdentityConnection")), ServiceLifetime.Scoped);
+builder.Services.AddDbContext<BlogDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("BlogDb")), ServiceLifetime.Scoped);
+
+builder.Services.AddIdentity<ApplicationUser, IdentityRole>(options => options.SignIn.RequireConfirmedAccount = true)
+    .AddEntityFrameworkStores<IdentityDbContext>()
+    .AddErrorDescriber<IdentityErrorDescriberPtBr>()
+    .AddDefaultTokenProviders();
+
+builder.Services.AddScoped<ApplicationSignInManager>().AddScoped<ApplicationUserManager>();
+
+builder.Services
+    .Configure<IdentityOptions>(options =>
     {
-        options.UseSqlServer(builder.Configuration.GetConnectionString("BlogDb"));
+        options.Password.RequireDigit = false;
+        options.Password.RequiredLength = 6;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = false;
+    })
+    .ConfigureApplicationCookie(options =>
+    {
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
     });
 
-//builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = true)
-//    .AddEntityFrameworkStores<BlogContextIdentity>();
 builder.Services.AddRazorPages();
 builder.Services.AddMvcCore();
 builder.Services.AddScoped(typeof(IRepositoryBase<>), typeof(RepositoryBase<>));
