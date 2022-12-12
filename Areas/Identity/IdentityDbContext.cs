@@ -2,27 +2,83 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
-[assembly: HostingStartup(typeof(Blog.Areas.Identity.IdentityHostingStartup))]
 namespace Blog.Areas.Identity
 {
-    public class IdentityHostingStartup : IHostingStartup
+    public class IdentityDbContext : Microsoft.AspNetCore.Identity.EntityFrameworkCore.IdentityDbContext<ApplicationUser>
     {
-        public void Configure(IWebHostBuilder builder)
-        {
-            builder.ConfigureServices((context, services) =>
-            {
-                services.AddDbContext<BlogDbContext>(options =>
-                    options.UseSqlServer(
-                        context.Configuration.GetConnectionString("BlogDb")));
+        public IdentityDbContext(DbContextOptions<IdentityDbContext> options) : base(options) { }
 
-                services.AddDefaultIdentity<IdentityUser>(options =>
-                {
-                    options.SignIn.RequireConfirmedAccount = true;
-                    options.Password.RequireNonAlphanumeric = false;
-                    options.Password.RequiredLength = 6;
-                })
-                    .AddErrorDescriber<IdentityErrorDescriberPtBr>()
-                    .AddEntityFrameworkStores<BlogDbContext>();
+        protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+        {
+            base.ConfigureConventions(configurationBuilder);
+            configurationBuilder.Properties<string>().HaveColumnType("varchar");
+        }
+
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
+
+            builder.HasDefaultSchema("identity");
+            builder.Entity<ApplicationUser>(entity =>
+            {
+                entity.ToTable(name: "Users");
+                entity.Property(e => e.Id).HasMaxLength(40);
+                entity.Property(e => e.PasswordHash).HasMaxLength(100);
+                entity.Property(e => e.SecurityStamp).HasMaxLength(40);
+                entity.Property(e => e.ConcurrencyStamp).HasMaxLength(40);
+                entity.Property(e => e.PhoneNumber).HasMaxLength(30);
+                entity.Property(e => e.DisplayName).HasMaxLength(60);
+                entity.Property(e => e.ProfilePicture).HasColumnType("varchar(max)");
+            });
+
+            builder.Entity<IdentityRole>(entity =>
+            {
+                entity.ToTable(name: "Roles");
+                entity.Property(e => e.Id).HasMaxLength(40);
+                entity.Property(e => e.ConcurrencyStamp).HasMaxLength(40);
+            });
+
+            builder.Entity<IdentityUserRole<string>>(entity =>
+            {
+                entity.ToTable("UserRoles");
+                entity.Property(e => e.RoleId).HasMaxLength(40);
+                entity.Property(e => e.UserId).HasMaxLength(40);
+            });
+
+            builder.Entity<IdentityUserClaim<string>>(entity =>
+            {
+                entity.ToTable("UserClaims");
+                entity.Property(e => e.UserId).HasMaxLength(40);
+                entity.Property(e => e.ClaimType).HasMaxLength(256);
+                entity.Property(e => e.ClaimValue).HasMaxLength(256);
+            });
+
+            builder.Entity<IdentityUserLogin<string>>(entity =>
+            {
+                entity.ToTable("UserLogins");
+                entity.Property(e => e.LoginProvider).HasMaxLength(40);
+                entity.Property(e => e.ProviderKey).HasMaxLength(40);
+                entity.Property(e => e.ProviderDisplayName).HasMaxLength(256);
+                entity.Property(e => e.UserId).HasMaxLength(40);
+            });
+
+            builder.Entity<IdentityRoleClaim<string>>(entity =>
+            {
+                entity.ToTable("RoleClaims");
+                entity.Property(e => e.Id).HasMaxLength(40);
+                entity.Property(e => e.RoleId).HasMaxLength(40);
+                entity.Property(e => e.ClaimType).HasMaxLength(256);
+                entity.Property(e => e.ClaimValue).HasMaxLength(256);
+
+            });
+
+            builder.Entity<IdentityUserToken<string>>(entity =>
+            {
+                entity.ToTable("UserTokens");
+                entity.Property(e => e.UserId).HasMaxLength(40);
+                entity.Property(e => e.LoginProvider).HasMaxLength(40);
+                entity.Property(e => e.Name).HasMaxLength(40);
+                entity.Property(e => e.Value).HasMaxLength(256);
             });
         }
     }
